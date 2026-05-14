@@ -495,7 +495,7 @@ function initDemoData(){
     'Feb 26': {Carina:29, Diego:23, Emanuel:9,  total:64,  adi:734588260},
     'Mar 26': {Carina:16, Diego:13, Emanuel:5,  total:36,  adi:445636532},
     'Abr 26': {Carina:26, Diego:11, Emanuel:11, total:48,  adi:620863660},
-    'May 26': {Carina:5,  Diego:1,  Emanuel:0,  total:6,   adi:76003151.5},
+    'May 26': {Carina:6,  Diego:1,  Emanuel:2,  total:9,   adi:118866303},
   };
   const metas_hist = {
     'Ene 26': {Carina:65, Diego:39, Emanuel:71},
@@ -611,7 +611,7 @@ const ADI_FINANCIADO = {
   'Feb 26': 721493305.6,
   'Mar 26': 434351584.98,
   'Abr 26': 588487160,
-  'May 26': 74504848.5,
+  'May 26': 117368000,
 };
 const CANT_TRADICIONAL = {
   'Ene 26': 2, 'Feb 26': 4, 'Mar 26': 1, 'Abr 26': 0, 'May 26': 0,
@@ -720,7 +720,7 @@ function getVendidosAcum(key){
 function ensureVPL(){
   if(DB.ventas_por_loteo && Object.keys(DB.ventas_por_loteo).length > 0) return;
   DB.ventas_por_loteo = {
-    'TIP 2':    {vendidos_mes:{'Ene 26':83,'Feb 26':34,'Mar 26':11,'Abr 26':18,'May 26':5}},
+    'TIP 2':    {vendidos_mes:{'Ene 26':83,'Feb 26':34,'Mar 26':11,'Abr 26':18,'May 26':6}},
     'NOGAL':    {vendidos_mes:{'Ene 26':4, 'Feb 26':2, 'Mar 26':7, 'Abr 26':7, 'May 26':1}},
     'N ALIS 3': {vendidos_mes:{'Ene 26':4, 'Feb 26':3, 'Mar 26':1, 'Abr 26':6, 'May 26':0}},
     'JACA':     {vendidos_mes:{'Ene 26':30,'Feb 26':5, 'Mar 26':6, 'Abr 26':1, 'May 26':0}},
@@ -2384,13 +2384,16 @@ function renderComentariosV(el){
   `;
 }
 
+
 // ══════════════════════════════════════════════════════════
-// HELPERS FIRMAS Y MARKETING (localStorage)
+// HELPERS FIRMAS Y MARKETING
 // ══════════════════════════════════════════════════════════
 function getFirmasDB(){ return LS.get('firmas_db') || {meses:{}}; }
 function saveFirmasDB(d){ LS.set('firmas_db', d); }
 function getMktDB(){ return LS.get('mkt_db') || {meses:{}}; }
 function saveMktDB(d){ LS.set('mkt_db', d); }
+function getFirmasRegistros(){ return LS.get('firmas_regs') || []; }
+function saveFirmasRegistros(arr){ LS.set('firmas_regs', arr); }
 
 const ESCRIBANOS = ['Meca Agostini','Saravia Pérez','Bracamonte','Escribano Externo'];
 const LOTEOS_FIRMA = ['Tipuana','Tipuana II','El Nogal','Jacarandá','Bosque','Nogal','Nuevo Alisos III','Nuevo Alisos I y II','Boulevard'];
@@ -2398,224 +2401,362 @@ const LOTEO_COLORS_F = {'Tipuana':'#1A4F8A','Tipuana II':'#5B2D8E','El Nogal':'#
 const MKT_CANALES = ['Meta Ads','Google Ads','TikTok Ads','YouTube','Orgánico'];
 const MKT_CANAL_COLORS = {'Meta Ads':'#1A4F8A','Google Ads':'var(--na)','TikTok Ads':'var(--ro)','YouTube':'#B71C1C','Orgánico':'var(--ve)'};
 
-const FIRMAS_SEED_DATA = {
-  total:105, bcv:105, escrituras:0, pendientes:0, no_firma:0, cargado:true,
-  notas:'Datos del informe PDF Febrero 2026',
-  escribanos:{'Meca Agostini':29,'Saravia Pérez':51,'Bracamonte':24,'Escribano Externo':1},
-  loteos:{'Tipuana':71,'Jacarandá':14,'Bosque I y II':2,'Nogal':8,'Nuevo Alisos III':3,'Boulevard':7}
-};
+// Cloud sync para registros de firmas
+async function loadFirmasRegistrosCloud(){
+  try {
+    const rows = await sbGet('firmas_registros','?select=*&order=fecha.desc,id.desc');
+    if(rows.length){ saveFirmasRegistros(rows); return rows; }
+  } catch(e){}
+  return getFirmasRegistros();
+}
+async function saveFirmaRegistroCloud(reg){
+  showSync(false);
+  try {
+    const {id,...data}=reg;
+    if(String(id).length>10){ const r=await sbUpsert('firmas_registros',[data]); if(r?.[0]) reg.id=r[0].id; }
+    showSync(true);
+  } catch(e){ showSync(false); }
+}
+async function deleteFirmaRegistroCloud(id){
+  showSync(false);
+  try { if(String(id).length<=10) await sbDelete('firmas_registros',`?id=eq.${id}`); showSync(true); } catch(e){}
+}
+
+// Seed datos históricos (informes PDF)
+const FIRMAS_SEED_DATA  = {total:105,bcv:105,escrituras:0,pendientes:0,no_firma:0,cargado:true,notas:'PDF Feb 2026',escribanos:{'Meca Agostini':29,'Saravia Pérez':51,'Bracamonte':24,'Escribano Externo':1},loteos:{'Tipuana':71,'Jacarandá':14,'Bosque I y II':2,'Nogal':8,'Nuevo Alisos III':3,'Boulevard':7}};
+const FIRMAS_SEED_ENERO = {total:82,bcv:82,escrituras:0,pendientes:0,no_firma:0,cargado:true,notas:'PDF Ene 2026',escribanos:{'Meca Agostini':11,'Saravia Pérez':36,'Bracamonte':35,'Escribano Externo':0},loteos:{'Tipuana':47,'Jacarandá':18,'Bosque I y II':0,'Nogal':0,'Nuevo Alisos III':0,'Boulevard':0}};
+const FIRMAS_SEED_MARZO = {total:47,bcv:47,escrituras:0,pendientes:0,no_firma:0,cargado:true,notas:'PDF Mar 2026',escribanos:{'Meca Agostini':10,'Saravia Pérez':20,'Bracamonte':17,'Escribano Externo':0},loteos:{'Tipuana':25,'Jacarandá':7,'Bosque I y II':3,'Nogal':1,'Nuevo Alisos III':5,'Nuevo Alisos I y II':4,'Boulevard':2}};
+const FIRMAS_SEED_ABRIL = {total:14,bcv:14,escrituras:0,pendientes:0,no_firma:0,cargado:true,notas:'Caída por 1° cuota requerida. PDF Abr 2026.',escribanos:{'Meca Agostini':2,'Saravia Pérez':10,'Bracamonte':2,'Escribano Externo':0},loteos:{'Tipuana':9,'Jacarandá':3,'Bosque I y II':0,'Nogal':1,'Nuevo Alisos III':1,'Nuevo Alisos I y II':0,'Boulevard':0}};
 
 function ensureFirmasSeed(){
-  const d = getFirmasDB();
-  if(!d.meses) d.meses = {};
-  if(!d.meses['Feb 26']){ d.meses['Feb 26'] = FIRMAS_SEED_DATA; saveFirmasDB(d); }
-  return d;
+  const d=getFirmasDB(); if(!d.meses) d.meses={};
+  if(!d.meses['Ene 26']||!d.meses['Ene 26'].cargado) d.meses['Ene 26']=FIRMAS_SEED_ENERO;
+  if(!d.meses['Feb 26']||!d.meses['Feb 26'].cargado) d.meses['Feb 26']=FIRMAS_SEED_DATA;
+  if(!d.meses['Mar 26']||!d.meses['Mar 26'].cargado) d.meses['Mar 26']=FIRMAS_SEED_MARZO;
+  if(!d.meses['Abr 26']||!d.meses['Abr 26'].cargado) d.meses['Abr 26']=FIRMAS_SEED_ABRIL;
+  saveFirmasDB(d); return d;
+}
+async function loadFirmasCloud(){
+  const rows=await sbGet('firmas','?select=*');
+  const fdb=getFirmasDB(); if(!fdb.meses) fdb.meses={};
+  rows.forEach(r=>{ const{id,created_at,updated_at,...data}=r; fdb.meses[r.mes]=data; });
+  saveFirmasDB(fdb); return fdb;
 }
 
 // ══════════════════════════════════════════════════════════
-// PANEL: FIRMAS
+// PANEL: FIRMAS — registro individual
 // ══════════════════════════════════════════════════════════
 function renderFirmas(el){
-  const fdb = ensureFirmasSeed();
-  const mes = getMesActual();
+  loadFirmasRegistrosCloud()
+    .then(regs=>_renderFirmasContent(el,regs))
+    .catch(()=>_renderFirmasContent(el,getFirmasRegistros()));
+}
+
+function _renderFirmasContent(el, registros){
+  const isEmi = currentUser.role==='firmas';
+  const mes   = getMesActual();
   const meses = MESES_ORDER.filter(m=>DB.meses_cargados.includes(m));
-  const isEmi = currentUser.role === 'firmas';
-  const mesData = fdb.meses?.[mes];
-  const prevMes = meses[meses.indexOf(mes)-1];
-  const prevData = prevMes ? fdb.meses?.[prevMes] : null;
-  const sinDatos = !mesData?.cargado;
+  const fdb   = ensureFirmasSeed();
+
+  const regsDelMes = registros.filter(r=>r.mes===mes);
+  const totalMes   = regsDelMes.length;
+  const conQuejas  = regsDelMes.filter(r=>r.tuvo_quejas).length;
+  const noFirmoOk  = regsDelMes.filter(r=>!r.firmo_ok).length;
+  const sinVisita  = regsDelMes.filter(r=>!r.visito_loteo).length;
+  const externos   = regsDelMes.filter(r=>r.escribano_externo).length;
+
+  const porEscribano={};
+  regsDelMes.forEach(r=>{ const e=r.escribano_externo?'Escribano Externo':r.escribano; porEscribano[e]=(porEscribano[e]||0)+1; });
+  const porLoteo={};
+  regsDelMes.forEach(r=>{ porLoteo[r.loteo]=(porLoteo[r.loteo]||0)+1; });
+
+  // Historial: combina registros individuales + datos seed para meses sin registros
+  const historial = meses.map(m=>{
+    const regsM = registros.filter(r=>r.mes===m);
+    const seed  = fdb.meses?.[m];
+    return { mes:m, total: regsM.length || seed?.total || 0, ventas: getTotalMes(m), tieneRegistros: regsM.length>0, tieneSeed: !!seed?.cargado };
+  });
+
+  const ESC_COLORS={'Meca Agostini':'var(--az)','Saravia Pérez':'var(--ve)','Bracamonte':'var(--pu)','Escribano Externo':'var(--am)'};
+  const hoy = new Date().toISOString().slice(0,10);
+  const mesOptions = meses.map(m=>`<option value="${m}" ${m===mes?'selected':''}>${m}</option>`).join('');
 
   el.innerHTML=`
     <div class="section-hdr">
-      <div><h2>Panel Firmas${isEmi?'':' — Gerencia'}</h2><p>Firmas BCV · ${mes}</p></div>
-      ${isEmi?`<button class="btn-sm" onclick="abrirCargaFirmas('${mes}')">＋ Cargar informe ${mes}</button>`:''}
-    </div>
-    ${sinDatos?`<div class="alerta alerta-red">⚠ Sin datos de firmas para ${mes}${isEmi?' — cargalos arriba':' — Emi debe cargar el informe'}.</div>`:''}
-    <div class="kgrid">
-      <div class="kcard purple"><div class="kcard-label">Firmas BCV ${mes}</div><div class="kcard-val">${mesData?.total??'—'}</div>
-        <div class="kcard-sub">${prevData?.total!=null?`vs ${prevMes}: ${prevData.total}`:' '}</div></div>
-      <div class="kcard blue"><div class="kcard-label">BCV firmados</div><div class="kcard-val">${mesData?.bcv??'—'}</div><div class="kcard-sub">boletos de compraventa</div></div>
-      <div class="kcard green"><div class="kcard-label">Escrituras</div><div class="kcard-val">${mesData?.escrituras??'—'}</div><div class="kcard-sub">escrituras formalizadas</div></div>
-      <div class="kcard orange"><div class="kcard-label">Pendientes</div><div class="kcard-val">${mesData?.pendientes??'—'}</div><div class="kcard-sub">sin firmar aún</div></div>
-      <div class="kcard red"><div class="kcard-label">No firman</div><div class="kcard-val">${mesData?.no_firma??'—'}</div><div class="kcard-sub">arrepentidos / incontactables</div></div>
-    </div>
-
-    ${mesData?.total!=null&&prevData?.total!=null?`
-    <div class="card">
-      <div class="card-title">Firmas ${mes} vs ventas ${prevMes}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-        <div style="background:var(--pu-c);border-radius:10px;padding:16px;border:1px solid rgba(91,45,142,.15)">
-          <div style="font-size:11px;font-weight:700;color:var(--pu);text-transform:uppercase;margin-bottom:6px">Firmas ${mes}</div>
-          <div style="font-size:34px;font-weight:800;color:var(--pu);font-family:var(--mono)">${mesData.total}</div>
-        </div>
-        <div style="background:var(--na-light);border-radius:10px;padding:16px;border:1px solid var(--na-c)">
-          <div style="font-size:11px;font-weight:700;color:var(--na);text-transform:uppercase;margin-bottom:6px">Ventas ${prevMes}</div>
-          <div style="font-size:34px;font-weight:800;color:var(--na);font-family:var(--mono)">${getTotalMes(prevMes)}</div>
-          <div style="font-size:11px;color:var(--na);margin-top:4px">ratio: ${getTotalMes(prevMes)?((mesData.total/getTotalMes(prevMes))*100).toFixed(0):0}% firmaron</div>
-        </div>
+      <div><h2>Panel Firmas</h2><p>${isEmi?'Registro firma por firma':'Vista gerencia'} · ${mes}</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${totalMes>0||fdb.meses?.[mes]?.cargado?`<button class="btn-sm btn-sec" onclick="generarPDFFirmas('${mes}')">📄 Informe PDF ${mes}</button>`:''}
+        ${isEmi?`<button class="btn-sm" onclick="abrirNuevaFirma()">＋ Nueva firma</button>`:''}
       </div>
-    </div>`:''}
+    </div>
 
-    ${mesData?.escribanos?`<div class="card">
-      <div class="card-title">Por escribano — ${mes}</div>
-      ${Object.entries(mesData.escribanos).map(([esc,cant])=>{
-        const total=mesData.total||1; const pct=Math.round(cant/total*100);
-        const cols={'Meca Agostini':'var(--az)','Saravia Pérez':'var(--ve)','Bracamonte':'var(--pu)','Escribano Externo':'var(--am)'};
-        const col=cols[esc]||'var(--gr-m)';
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F5F4F2">
-          <div style="min-width:130px;font-size:13px;font-weight:600;color:${col}">${esc}</div>
-          <div style="flex:1;height:10px;background:#EBEBEB;border-radius:5px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${col};border-radius:5px;transition:width .6s"></div>
-          </div>
-          <div style="font-family:var(--mono);font-size:14px;font-weight:800;min-width:60px;text-align:right">${cant} <span style="color:var(--gr-m);font-size:11px;font-weight:400">(${pct}%)</span></div>
-        </div>`;
-      }).join('')}
-    </div>`:''}
+    <div class="kgrid">
+      <div class="kcard purple"><div class="kcard-label">Firmas ${mes}</div><div class="kcard-val">${totalMes||'—'}</div><div class="kcard-sub">registradas</div></div>
+      <div class="kcard ${conQuejas>0?'red':'green'}"><div class="kcard-label">Con quejas</div><div class="kcard-val">${conQuejas}</div><div class="kcard-sub">de ${totalMes} firmas</div></div>
+      <div class="kcard ${noFirmoOk>0?'red':'green'}"><div class="kcard-label">No firmaron ok</div><div class="kcard-val">${noFirmoOk}</div><div class="kcard-sub">tuvieron problemas</div></div>
+      <div class="kcard orange"><div class="kcard-label">Sin visita al loteo</div><div class="kcard-val">${sinVisita}</div><div class="kcard-sub">no conocen el terreno</div></div>
+      <div class="kcard blue"><div class="kcard-label">Escribano externo</div><div class="kcard-val">${externos}</div><div class="kcard-sub">en ${mes}</div></div>
+    </div>
 
-    ${mesData?.loteos?`<div class="card">
-      <div class="card-title">Por loteo — ${mes}</div>
-      <div style="overflow-x:auto"><table class="tbl">
-        <thead><tr><th>Loteo</th><th class="num">Firmas</th><th class="num">% del mes</th><th>Barra</th></tr></thead>
-        <tbody>${Object.entries(mesData.loteos).sort((a,b)=>b[1]-a[1]).map(([lot,cant])=>{
-          const pct=mesData.total?Math.round(cant/mesData.total*100):0;
-          const col=LOTEO_COLORS_F[lot]||'var(--gr-m)';
-          return `<tr>
-            <td><div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:${col}"></div><strong>${lot}</strong></div></td>
-            <td class="num"><strong style="color:${col}">${cant}</strong></td>
-            <td class="num">${pct}%</td>
-            <td style="min-width:120px"><div style="height:8px;background:#EBEBEB;border-radius:4px;overflow:hidden">
-              <div style="height:100%;width:${pct}%;background:${col};border-radius:4px"></div></div></td>
-          </tr>`;
-        }).join('')}</tbody>
-        <tfoot><tr style="background:var(--pu-c);font-weight:700"><td>TOTAL</td><td class="num">${mesData.total}</td><td class="num">100%</td><td></td></tr></tfoot>
-      </table></div>
+    ${totalMes>0?`<div class="g2">
+      <div class="card"><div class="card-title">Por escribano — ${mes}</div>
+        ${Object.entries(porEscribano).sort((a,b)=>b[1]-a[1]).map(([e,n])=>{
+          const col=ESC_COLORS[e]||'var(--gr-m)'; const pct=totalMes?Math.round(n/totalMes*100):0;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F5F4F2">
+            <div style="min-width:120px;font-size:13px;font-weight:600;color:${col}">${e}</div>
+            <div style="flex:1;height:8px;background:#EBEBEB;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${col};border-radius:4px"></div></div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:800;min-width:50px;text-align:right">${n} <span style="color:var(--gr-m);font-size:10px">(${pct}%)</span></div>
+          </div>`;}).join('')}
+      </div>
+      <div class="card"><div class="card-title">Por loteo — ${mes}</div>
+        ${Object.entries(porLoteo).sort((a,b)=>b[1]-a[1]).map(([l,n])=>{
+          const col=LOTEO_COLORS_F[l]||'var(--gr-m)'; const pct=totalMes?Math.round(n/totalMes*100):0;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F5F4F2">
+            <div style="display:flex;align-items:center;gap:6px;min-width:120px"><div style="width:9px;height:9px;border-radius:50%;background:${col}"></div><span style="font-size:13px;font-weight:600">${l}</span></div>
+            <div style="flex:1;height:8px;background:#EBEBEB;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${col};border-radius:4px"></div></div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:800;min-width:50px;text-align:right">${n} <span style="color:var(--gr-m);font-size:10px">(${pct}%)</span></div>
+          </div>`;}).join('')}
+      </div>
     </div>`:''}
 
     <div class="card">
       <div class="card-title">Historial 2026 — firmas vs ventas</div>
       <div style="overflow-x:auto"><table class="tbl">
-        <thead><tr><th>Mes</th><th class="num">Firmas</th><th class="num">Ventas</th><th class="num">BCV</th><th class="num">Escrituras</th><th class="num">Pendientes</th><th class="num">No firman</th><th>Estado</th></tr></thead>
-        <tbody>${meses.map(m=>{
-          const d=fdb.meses?.[m]; const v=getTotalMes(m);
-          return `<tr><td><strong>${m}</strong></td>
-            <td class="num" style="color:var(--pu);font-weight:700">${d?.total??'—'}</td>
-            <td class="num">${v}</td><td class="num">${d?.bcv??'—'}</td>
-            <td class="num">${d?.escrituras??'—'}</td>
-            <td class="num" style="color:${d?.pendientes>0?'var(--na)':'var(--gr-m)'}">${d?.pendientes??'—'}</td>
-            <td class="num" style="color:${d?.no_firma>0?'var(--ro)':'var(--gr-m)'}">${d?.no_firma??'—'}</td>
-            <td>${d?.cargado?'<span class="badge badge-green">Cargado</span>':'<span class="badge badge-red">Sin datos</span>'}</td>
-          </tr>`;
-        }).join('')}</tbody>
+        <thead><tr><th>Mes</th><th class="num">Firmas</th><th class="num">Ventas</th><th class="num">Ratio</th><th>Fuente</th></tr></thead>
+        <tbody>${historial.map(({mes:m,total,ventas,tieneRegistros,tieneSeed})=>`<tr>
+          <td><strong>${m}</strong></td>
+          <td class="num" style="color:var(--pu);font-weight:700">${total||'—'}</td>
+          <td class="num">${ventas}</td>
+          <td class="num">${total&&ventas?(total/ventas*100).toFixed(0)+'%':'—'}</td>
+          <td>${tieneRegistros?'<span class="badge badge-green">Registro ind.</span>':tieneSeed?'<span class="badge badge-blue">Informe PDF</span>':'<span class="badge badge-red">Sin datos</span>'}</td>
+        </tr>`).join('')}</tbody>
       </table></div>
     </div>
 
-    ${isEmi?`
-    <div class="card"><div class="card-title">Mis tareas</div>
+    ${totalMes>0?`<div class="card">
+      <div class="card-title">Detalle ${mes} — ${totalMes} firmas</div>
+      <div style="overflow-x:auto"><table class="tbl">
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Loteo</th><th>Escribano</th><th>Modalidad</th><th style="text-align:center">Firmó ok</th><th style="text-align:center">Quejas</th><th style="text-align:center">Visitó</th>${isEmi?'<th></th>':''}</tr></thead>
+        <tbody>${regsDelMes.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(r=>{
+          const esc=r.escribano_externo?'<span style="color:var(--am);font-weight:700">Externo</span>':`<span style="color:${ESC_COLORS[r.escribano]||'var(--gr)'};font-size:12px">${r.escribano||'—'}</span>`;
+          return `<tr>
+            <td style="font-size:12px;white-space:nowrap">${r.fecha||'—'}</td>
+            <td style="font-size:12px">${r.cliente||'—'}</td>
+            <td><span class="badge badge-blue" style="font-size:9px">${r.loteo||'—'}</span></td>
+            <td>${esc}</td>
+            <td><span class="badge ${r.modalidad==='oficina'?'badge-green':'badge-blue'}" style="font-size:9px">${r.modalidad==='oficina'?'Oficina':'Boleto'}</span></td>
+            <td style="text-align:center">${r.firmo_ok?'<span style="color:var(--ve);font-weight:700">✓</span>':'<span style="color:var(--ro);font-weight:700">✗</span>'}</td>
+            <td style="text-align:center">${r.tuvo_quejas?'<span style="color:var(--ro)">⚠</span>':'<span style="color:var(--gr-m)">—</span>'}</td>
+            <td style="text-align:center">${r.visito_loteo?'<span style="color:var(--ve)">✓</span>':'<span style="color:var(--na)">No</span>'}</td>
+            ${isEmi?`<td><button onclick="borrarFirmaRegistro(${r.id})" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:12px">✕</button></td>`:''}
+          </tr>`;}).join('')}</tbody>
+      </table></div>
+    </div>`:`<div class="card"><div style="text-align:center;padding:28px;color:var(--gr-m)">
+      <div style="font-size:28px;margin-bottom:8px">📋</div>
+      <div style="font-size:14px;font-weight:600">Sin firmas registradas en ${mes}</div>
+      ${isEmi?'<div style="font-size:12px;margin-top:4px;color:var(--na)">Usá el botón "＋ Nueva firma" para cargar</div>':''}
+    </div></div>`}
+
+    ${isEmi?`<div class="card"><div class="card-title">Mis tareas</div>
       ${(()=>{ const p=DB.tareas.filter(t=>!t.done&&(t.para==='firmas'||t.para==='todos'));
-        return p.length?p.map(t=>`<div class="task-item"><div class="task-cb" onclick="toggleTarea(${t.id})"></div>
-          <div class="task-body"><div class="task-text">${t.texto}</div><div class="task-meta">Asignó: ${t.de} · ${t.fecha}</div></div></div>`).join('')
+        return p.length?p.map(t=>`<div class="task-item">
+          <div class="task-cb ${t.done?'done':''}" onclick="toggleTarea(${t.id})">${t.done?'✓':''}</div>
+          <div class="task-body"><div class="task-text ${t.done?'done-text':''}">${t.texto}</div>
+          <div class="task-meta">Asignó: ${t.de} · ${t.fecha}</div></div></div>`).join('')
           :'<div class="alerta alerta-green">✓ Sin tareas pendientes</div>'; })()}
-    </div>
-    <div class="card"><div class="card-title">Notas</div>
-      ${(DB.comentarios||[]).filter(c=>c.para==='firmas'||c.para==='todos').slice(-5).reverse()
-        .map(c=>`<div class="comment-item"><div class="comment-who">${c.de}</div><div class="comment-text">${c.texto}</div><div class="comment-time">${c.fecha}</div></div>`).join('')
-        ||'<p style="font-size:13px;color:var(--gr-m)">Sin notas.</p>'}
     </div>`:''}
 
-    <div id="modal-firmas" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center">
-      <div style="background:white;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-          <h3 style="font-size:16px;font-weight:800" id="modal-firmas-titulo">Cargar informe</h3>
-          <button onclick="cerrarModalFirmas()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gr-m)">✕</button>
-        </div><div id="modal-firmas-body"></div>
+    <!-- Modal nueva firma -->
+    <div id="modal-firma-nueva" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center">
+      <div style="background:white;border-radius:16px;padding:28px;width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <h3 style="font-size:16px;font-weight:800">Registrar firma BCV</h3>
+          <button onclick="cerrarModalFirma()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gr-m)">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:4px">Fecha</label>
+            <input type="date" id="nf-fecha" value="${hoy}" style="width:100%;padding:9px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:var(--font)"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:4px">Mes</label>
+            <select id="nf-mes" style="width:100%;padding:9px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:var(--font)">${mesOptions}</select></div>
+        </div>
+        <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:4px">Cliente</label>
+          <input type="text" id="nf-cliente" placeholder="Apellido, Nombre" style="width:100%;padding:9px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:var(--font)"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:4px">Loteo</label>
+            <select id="nf-loteo" style="width:100%;padding:9px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:var(--font)">${LOTEOS_FIRMA.map(l=>`<option>${l}</option>`).join('')}</select></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:4px">Escribano</label>
+            <select id="nf-escribano" style="width:100%;padding:9px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:var(--font)">${ESCRIBANOS.map(e=>`<option>${e}</option>`).join('')}</select></div>
+        </div>
+        <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:6px">Modalidad</label>
+          <div style="display:flex;gap:10px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:9px 14px;border:1.5px solid #E4E4E4;border-radius:8px;flex:1;font-size:13px"><input type="radio" name="nf-modalidad" value="oficina" checked> 🏢 En oficina</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:9px 14px;border:1.5px solid #E4E4E4;border-radius:8px;flex:1;font-size:13px"><input type="radio" name="nf-modalidad" value="envio"> 📬 Envió boleto</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          ${[['nf-externo','¿Escribano externo?'],['nf-firmo-ok','¿Firmó adecuadamente?'],['nf-quejas','¿Tuvo quejas?'],['nf-visita','¿Ya visitó el loteo?']].map(([id,lbl])=>`
+          <div style="background:var(--gr-c);border-radius:8px;padding:10px 12px">
+            <div style="font-size:11px;font-weight:700;color:var(--gr-m);margin-bottom:6px">${lbl}</div>
+            <div style="display:flex;gap:12px">
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="radio" name="${id}" value="si"> Sí</label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="radio" name="${id}" value="no" checked> No</label>
+            </div>
+          </div>`).join('')}
+        </div>
+        <div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:4px">Observaciones</label>
+          <textarea id="nf-obs" rows="2" placeholder="Notas adicionales..." style="width:100%;padding:9px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:var(--font);resize:vertical"></textarea></div>
+        <button class="btn-sm" onclick="guardarNuevaFirma()" style="width:100%;padding:13px;font-size:14px">Guardar firma</button>
       </div>
     </div>
   `;
 }
 
-function abrirCargaFirmas(mes){
-  const fdb=getFirmasDB(); const d=fdb.meses?.[mes]||{};
-  document.getElementById('modal-firmas-titulo').textContent='Cargar informe — '+mes;
+function abrirNuevaFirma(){ document.getElementById('modal-firma-nueva').style.display='flex'; }
+function cerrarModalFirma(){ document.getElementById('modal-firma-nueva').style.display='none'; }
+function abrirCargaFirmas(){ abrirNuevaFirma(); }
+function cerrarModalFirmas(){ cerrarModalFirma(); }
 
-  // Mapeo loteos del sistema a nombres del informe de firmas
-  ensureVPL();
-  const vpl=DB.ventas_por_loteo||{};
-  const ventasRef = {
-    'Tipuana':        (vpl['TIP 2']?.vendidos_mes?.[mes]||0),
-    'Tipuana II':     (vpl['TIP 2']?.vendidos_mes?.[mes]||0),
-    'El Nogal':       (vpl['NOGAL']?.vendidos_mes?.[mes]||0),
-    'Jacarandá':      (vpl['JACA']?.vendidos_mes?.[mes]||0),
-    'Bosque':         (vpl['BOSQUE']?.vendidos_mes?.[mes]||0),
-    'Nogal':          (vpl['NOGAL']?.vendidos_mes?.[mes]||0),
-    'Nuevo Alisos III':(vpl['N ALIS 3']?.vendidos_mes?.[mes]||0),
-    'Nuevo Alisos I y II':(vpl['N ALIS 2']?.vendidos_mes?.[mes]||0),
-    'Boulevard':      (vpl['BVD']?.vendidos_mes?.[mes]||0),
+function guardarNuevaFirma(){
+  const cliente = document.getElementById('nf-cliente').value.trim();
+  if(!cliente){ alert('Ingresá el nombre del cliente'); return; }
+  const reg = {
+    id: Date.now(),
+    fecha:  document.getElementById('nf-fecha').value,
+    mes:    document.getElementById('nf-mes').value,
+    cliente,
+    loteo:  document.getElementById('nf-loteo').value,
+    escribano: document.getElementById('nf-escribano').value,
+    modalidad: document.querySelector('input[name="nf-modalidad"]:checked')?.value||'oficina',
+    escribano_externo: document.querySelector('input[name="nf-externo"]:checked')?.value==='si',
+    firmo_ok:     document.querySelector('input[name="nf-firmo-ok"]:checked')?.value==='si',
+    tuvo_quejas:  document.querySelector('input[name="nf-quejas"]:checked')?.value==='si',
+    visito_loteo: document.querySelector('input[name="nf-visita"]:checked')?.value==='si',
+    observaciones: document.getElementById('nf-obs').value.trim(),
+    cargado_por: currentUser.name,
   };
-  const totalVentasMes = getTotalMes(mes);
-
-  document.getElementById('modal-firmas-body').innerHTML=`
-    <div style="background:var(--na-light);border-radius:10px;padding:12px 14px;margin-bottom:16px;border:1px solid var(--na-c)">
-      <div style="font-size:11px;font-weight:700;color:var(--na);margin-bottom:4px">📊 Referencia — ventas ${mes}</div>
-      <div style="font-size:13px;color:var(--gr)">Total ventas del equipo: <strong>${totalVentasMes} lotes</strong> — usalos como referencia para completar las firmas.</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      ${[{id:'total',l:'Total firmas BCV',v:d.total},{id:'bcv',l:'BCV firmados',v:d.bcv},
-         {id:'escrituras',l:'Escrituras',v:d.escrituras},{id:'pendientes',l:'Pendientes de firma',v:d.pendientes},
-         {id:'no_firma',l:'No firman / arrepentidos',v:d.no_firma}
-      ].map(f=>`<div><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:4px">${f.l}</label>
-        <input type="number" id="cf-${f.id}" value="${f.v||''}" style="width:100%;padding:9px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:14px;font-family:var(--font)"></div>`).join('')}
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;margin-bottom:8px">Por escribano</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-      ${ESCRIBANOS.map(e=>`<div><label style="font-size:11px;color:var(--gr-m);display:block;margin-bottom:3px">${e}</label>
-        <input type="number" id="cf-esc-${e.replace(/[\s\/]/g,'_')}" value="${d.escribanos?.[e]||''}" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid #E4E4E4;border-radius:7px;font-size:13px;font-family:var(--font)"></div>`).join('')}
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;margin-bottom:4px">Por loteo</div>
-    <p style="font-size:11px;color:var(--gr-m);margin-bottom:10px">El número entre paréntesis es la cantidad de ventas de ese loteo en ${mes}.</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
-      ${LOTEOS_FIRMA.map(l=>{
-        const ref=ventasRef[l]||0;
-        return `<div>
-          <label style="font-size:11px;color:var(--gr-m);display:block;margin-bottom:3px">
-            ${l} ${ref>0?`<span style="color:var(--na);font-weight:700">(${ref} ventas)</span>`:''}
-          </label>
-          <input type="number" id="cf-lot-${l.replace(/[\s\/]/g,'_')}" value="${d.loteos?.[l]||''}" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid #E4E4E4;border-radius:7px;font-size:13px;font-family:var(--font)${ref>0?';border-color:var(--na-c)':''}">
-        </div>`;
-      }).join('')}
-    </div>
-    <div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:var(--gr-m);text-transform:uppercase;display:block;margin-bottom:4px">Notas</label>
-      <textarea id="cf-notas" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:var(--font);resize:vertical">${d.notas||''}</textarea>
-    </div>
-    <button class="btn-sm" onclick="guardarFirmas('${mes}')" style="width:100%;padding:13px;font-size:14px">Guardar informe ${mes}</button>
-  `;
-  document.getElementById('modal-firmas').style.display='flex';
-}
-
-function guardarFirmas(mes){
-  const fdb=getFirmasDB();
-  if(!fdb.meses) fdb.meses={};
-  const esc={}, lot={};
-  ESCRIBANOS.forEach(e=>{ const v=+document.getElementById('cf-esc-'+e.replace(/[\s\/]/g,'_'))?.value||0; if(v) esc[e]=v; });
-  LOTEOS_FIRMA.forEach(l=>{ const v=+document.getElementById('cf-lot-'+l.replace(/[\s\/]/g,'_'))?.value||0; if(v) lot[l]=v; });
-  const data={
-    total:+document.getElementById('cf-total').value||0,
-    bcv:+document.getElementById('cf-bcv').value||0,
-    escrituras:+document.getElementById('cf-escrituras').value||0,
-    pendientes:+document.getElementById('cf-pendientes').value||0,
-    no_firma:+document.getElementById('cf-no_firma').value||0,
-    escribanos:esc, loteos:lot,
-    notas:document.getElementById('cf-notas').value,
-    cargado:true,
-  };
-  fdb.meses[mes]=data;
-  saveFirmasDB(fdb);
-  saveFirmasCloud(mes, data);
-  cerrarModalFirmas();
+  const regs = getFirmasRegistros();
+  regs.unshift(reg);
+  saveFirmasRegistros(regs);
+  saveFirmaRegistroCloud(reg);
+  cerrarModalFirma();
   renderFirmas(document.getElementById('main-content'));
 }
-function cerrarModalFirmas(){ document.getElementById('modal-firmas').style.display='none'; }
+
+function borrarFirmaRegistro(id){
+  if(!confirm('¿Eliminar este registro?')) return;
+  const regs = getFirmasRegistros().filter(r=>r.id!==id);
+  saveFirmasRegistros(regs);
+  deleteFirmaRegistroCloud(id);
+  renderFirmas(document.getElementById('main-content'));
+}
 
 // ══════════════════════════════════════════════════════════
+// GENERADOR PDF INFORME FIRMAS
+// ══════════════════════════════════════════════════════════
+function generarPDFFirmas(mes){
+  const registros = getFirmasRegistros();
+  const fdb = ensureFirmasSeed();
+  const regsDelMes = registros.filter(r=>r.mes===mes);
+  const seed = fdb.meses?.[mes];
+  let total, porEscribano, porLoteo, filas;
+
+  if(regsDelMes.length>0){
+    total=regsDelMes.length;
+    porEscribano={}; regsDelMes.forEach(r=>{ const e=r.escribano_externo?'Escribano Externo':r.escribano; porEscribano[e]=(porEscribano[e]||0)+1; });
+    porLoteo={};    regsDelMes.forEach(r=>{ porLoteo[r.loteo]=(porLoteo[r.loteo]||0)+1; });
+    filas=regsDelMes.sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  } else if(seed?.cargado){
+    total=seed.total; porEscribano=seed.escribanos||{}; porLoteo=seed.loteos||{}; filas=[];
+  } else { alert(`Sin datos de firmas para ${mes}`); return; }
+
+  const ESC_HEX={'Meca Agostini':'#1A4F8A','Saravia Pérez':'#2D7A3A','Bracamonte':'#5B2D8E','Escribano Externo':'#7B5800'};
+  const LOT_HEX={'Tipuana':'#1A4F8A','Tipuana II':'#5B2D8E','El Nogal':'#2D7A3A','Jacarandá':'#E8611A','Bosque':'#00695C','Bosque I y II':'#00695C','Nogal':'#7B5800','Nuevo Alisos III':'#B71C1C','Nuevo Alisos I y II':'#C62828','Boulevard':'#3A3A3A'};
+
+  const escEntries=Object.entries(porEscribano).sort((a,b)=>b[1]-a[1]);
+  const lotEntries=Object.entries(porLoteo).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]);
+
+  const tblRow=(cells,bold)=>cells.map(c=>`<td style="padding:8px 12px;border:1px solid #E0E0E0;${bold?'font-weight:700':''}text-align:${typeof c==='number'?'center':'left'}">${c}</td>`).join('');
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Informe Firmas ${mes}</title>
+  <style>body{font-family:Arial,sans-serif;margin:40px;color:#333;font-size:13px}
+  h1{font-size:17px;font-weight:bold;text-align:center;text-decoration:underline;margin-bottom:24px}
+  h2{font-size:14px;font-weight:bold;text-decoration:underline;margin:22px 0 10px}
+  table{border-collapse:collapse;margin-bottom:18px}
+  th{background:#3A3A3A;color:white;padding:8px 12px;text-align:left;border:1px solid #555;font-size:12px}
+  .charts{display:flex;gap:50px;justify-content:center;align-items:flex-start;margin:20px 0 28px}
+  .chart-box{text-align:center;max-width:280px}
+  .chart-title{font-size:13px;font-weight:bold;margin-bottom:12px;text-decoration:underline}
+  .legend{text-align:left;margin-top:10px;font-size:11px}
+  .li{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;display:inline-block}
+  @media print{body{margin:20px}.no-print{display:none}}</style></head><body>
+  <h1>Informe General - Firmas BCV (${mes.replace('26','2026')})</h1>
+  <h2>Resumen General</h2>
+  <ul style="margin:0 0 16px 20px;line-height:1.8">
+    <li><strong>Total eventos registrados:</strong> ${total}</li>
+    <li><strong>Tipos de eventos:</strong> Firma de BCV</li>
+  </ul>
+  <h2>Distribución de Firmas por Escribanos/as:</h2>
+  <table style="width:60%"><thead><tr><th>Tipo de Firma</th><th style="text-align:center;width:100px">Cantidad</th><th style="text-align:center;width:100px">Porcentaje</th></tr></thead>
+  <tbody>${escEntries.map(([e,n])=>`<tr>${tblRow([`Firma de BCV - ${e}`,n,Math.round(n/total*100)+'%'])}</tr>`).join('')}</tbody></table>
+  <div class="charts">
+    <div class="chart-box">
+      <div class="chart-title">Total de Firmas de Escribanos</div>
+      ${tortaSVG(escEntries,total,ESC_HEX,170)}
+      <div class="legend">${escEntries.map(([e,n])=>`<div class="li"><span class="dot" style="background:${ESC_HEX[e]||'#888'}"></span>Firma de BCV - ${e}</div>`).join('')}</div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Firmas por Lotes</div>
+      ${tortaSVG(lotEntries,total,LOT_HEX,170)}
+      <div class="legend">${lotEntries.map(([l,n])=>`<div class="li"><span class="dot" style="background:${LOT_HEX[l]||'#888'}"></span>${l}</div>`).join('')}</div>
+    </div>
+  </div>
+  <h2>Resumen por Nombre de Loteo</h2>
+  <table style="width:50%"><thead><tr><th>Nombre de Loteo</th><th style="text-align:center">Total de Firmas</th></tr></thead>
+  <tbody>${lotEntries.map(([l,n])=>`<tr>${tblRow([l,n])}</tr>`).join('')}</tbody></table>
+  ${filas.length>0?`
+  <h2>Detalle — ${mes.replace('26','2026')} (${filas.length} registros)</h2>
+  <table style="width:100%;font-size:11px"><thead><tr>
+    <th>Fecha</th><th>Propiedad / Loteo</th><th>Tipo de evento</th><th>Contacto</th><th>Modalidad</th><th>Firmó ok</th><th>Quejas</th><th>Visitó loteo</th>
+  </tr></thead><tbody>
+  ${filas.map(r=>`<tr>
+    <td style="padding:5px 8px;border:1px solid #E0E0E0">${r.fecha||'—'}</td>
+    <td style="padding:5px 8px;border:1px solid #E0E0E0">${r.loteo||'—'}</td>
+    <td style="padding:5px 8px;border:1px solid #E0E0E0">Firma de BCV - ${r.escribano_externo?'Escribano Externo':r.escribano||'—'}</td>
+    <td style="padding:5px 8px;border:1px solid #E0E0E0">${r.cliente||'—'}</td>
+    <td style="padding:5px 8px;border:1px solid #E0E0E0;text-align:center">${r.modalidad==='oficina'?'Oficina':'Envió boleto'}</td>
+    <td style="padding:5px 8px;border:1px solid #E0E0E0;text-align:center">${r.firmo_ok?'✓':'✗'}</td>
+    <td style="padding:5px 8px;border:1px solid #E0E0E0;text-align:center">${r.tuvo_quejas?'⚠ Sí':'—'}</td>
+    <td style="padding:5px 8px;border:1px solid #E0E0E0;text-align:center">${r.visito_loteo?'Sí':'No'}</td>
+  </tr>`).join('')}
+  </tbody></table>`:''}
+  <p style="margin-top:30px;font-size:10px;color:#999;text-align:right">Generado el ${new Date().toLocaleDateString('es-AR')} · Agostini Desarrollos Inmobiliarios · María Emilia Martínez Bernal</p>
+  <button class="no-print" onclick="window.print()" style="margin-top:10px;padding:10px 20px;background:#E8611A;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:Arial">🖨 Imprimir / Guardar PDF</button>
+  </body></html>`;
+
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+}
+
+function tortaSVG(entries, total, colors, size){
+  if(!total||!entries.length) return `<svg width="${size}" height="${size}"><text x="${size/2}" y="${size/2}" text-anchor="middle" fill="#ccc" font-size="12">Sin datos</text></svg>`;
+  const cx=size/2, cy=size/2, r=size/2-12;
+  let ang=-Math.PI/2, slices='';
+  entries.forEach(([lbl,val])=>{
+    const a=(val/total)*2*Math.PI, ea=ang+a;
+    const x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang);
+    const x2=cx+r*Math.cos(ea),  y2=cy+r*Math.sin(ea);
+    const mid=ang+a/2, tx=cx+(r*.65)*Math.cos(mid), ty=cy+(r*.65)*Math.sin(mid);
+    const pct=Math.round(val/total*100);
+    slices+=`<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${a>Math.PI?1:0},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${colors[lbl]||'#888'}" stroke="white" stroke-width="2"/>`;
+    if(pct>=4) slices+=`<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="bold">${pct}%</text>`;
+    ang=ea;
+  });
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${slices}</svg>`;
+}
+
 // PANEL: MARKETING
 // ══════════════════════════════════════════════════════════
 function getMktMes(mes){ const d=getMktDB(); return d.meses?.[mes]||null; }
