@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- saved from url=(0050)file:///D:/Downloads/dashboard_agostini_v4_20.html -->
+<!-- saved from url=(0050)file:///D:/Downloads/dashboard_agostini_v4_21.html -->
 <html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agostini DI — Dashboard Comercial</title>
-<script src="./index_files/chart.umd.js.descargar"></script>
-<script src="./index_files/xlsx.full.min.js.descargar"></script>
+<script src="./Agostini DI — Dashboard Comercial_files/chart.umd.js.descargar"></script>
+<script src="./Agostini DI — Dashboard Comercial_files/xlsx.full.min.js.descargar"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -255,7 +255,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--gr);font-size:14px
 </div>
 </div>
 
-<script src="./index_files/xlsx.full.min.js.descargar"></script>
+<script src="./Agostini DI — Dashboard Comercial_files/xlsx.full.min.js.descargar"></script>
 <script>
 // ══════════════════════════════════════════════════════════
 // USUARIOS Y AUTH
@@ -480,8 +480,14 @@ async function loadMktCloud(){
 
 // Datos de ejemplo pre-cargados (Ene-May 2026)
 function initDemoData(){
-  const DATA_VERSION = '2026-05-12-v5';
+  const DATA_VERSION = '2026-05-13-v6';
   if(LS.get('data_version') !== DATA_VERSION){
+    // Limpiar TODO el localStorage para forzar recarga limpia
+    localStorage.removeItem('adi_db');
+    localStorage.removeItem('adi_firmas_db');
+    localStorage.removeItem('adi_firmas_regs');
+    localStorage.removeItem('adi_mkt_db');
+    LS.set('data_version', DATA_VERSION);
     // Limpiar datos viejos y reiniciar
     localStorage.removeItem('adi_db');
     LS.set('data_version', DATA_VERSION);
