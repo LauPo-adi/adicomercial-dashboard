@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0050)file:///D:/Downloads/dashboard_agostini_v4_17.html -->
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agostini DI — Dashboard Comercial</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./index_files/chart.umd.js.descargar"></script>
+<script src="./index_files/xlsx.full.min.js.descargar"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -255,7 +255,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--gr);font-size:14px
 </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./index_files/xlsx.full.min.js.descargar"></script>
 <script>
 // ══════════════════════════════════════════════════════════
 // USUARIOS Y AUTH
@@ -495,7 +495,7 @@ function initDemoData(){
     'Feb 26': {Carina:29, Diego:23, Emanuel:9,  total:64,  adi:734588260},
     'Mar 26': {Carina:16, Diego:13, Emanuel:5,  total:36,  adi:445636532},
     'Abr 26': {Carina:26, Diego:11, Emanuel:11, total:48,  adi:620863660},
-    'May 26': {Carina:6,  Diego:1,  Emanuel:2,  total:9,   adi:118866303},
+    'May 26': {Carina:6,  Diego:1,  Emanuel:2,  total:9,   adi:104407000},
   };
   const metas_hist = {
     'Ene 26': {Carina:65, Diego:39, Emanuel:71},
@@ -604,20 +604,19 @@ const ADI_CONTADO = {
   'Feb 26': 46608154.4,
   'Mar 26': 19310547.02,
   'Abr 26': 32376500,
-  'May 26': 1498303,
-};
+  'May 26': 209000,};
 const ADI_FINANCIADO = {
   'Ene 26': 1970638000,
   'Feb 26': 721493305.6,
   'Mar 26': 434351584.98,
   'Abr 26': 588487160,
-  'May 26': 117368000,
+  'May 26': 104198000,
 };
 const CANT_TRADICIONAL = {
-  'Ene 26': 2, 'Feb 26': 4, 'Mar 26': 1, 'Abr 26': 0, 'May 26': 0,
+  'Ene 26': 2, 'Feb 26': 4, 'Mar 26': 1, 'Abr 26': 0, 'May 26': 1,
 };
 const CANT_PLANES = {
-  'Ene 26': 167, 'Feb 26': 60, 'Mar 26': 35, 'Abr 26': 48, 'May 26': 6,
+  'Ene 26': 167, 'Feb 26': 60, 'Mar 26': 35, 'Abr 26': 48, 'May 26': 8,
 };
 
 function getContado(mes){ return ADI_CONTADO[mes]||0; }
@@ -636,7 +635,8 @@ function getPctFinanciado(mes){
 // ══════════════════════════════════════════════════════════
 const FIN_LOTEO = {
   'May 26': {
-    'TIPUANA 2': {cant:5, precio_prom:25059200, anticipo_prom:189661, pct_ant:0.76, cuota_prom:189661, n_cuotas:131, ingreso_total:125296000},
+    'TIPUANA 2': {cant:6, precio_prom:25172667, anticipo_prom:190550, pct_ant:0.76, cuota_prom:190550, n_cuotas:131, ingreso_total:151136000},
+    'TIPUANA':   {cant:2, precio_prom:28680000, anticipo_prom:217500, pct_ant:0.76, cuota_prom:217500, n_cuotas:131, ingreso_total:57360000},
     'EL NOGAL':  {cant:1, precio_prom:33000000, anticipo_prom:550000, pct_ant:1.67, cuota_prom:270417, n_cuotas:120, ingreso_total:33000000},
   },
   'Abr 26': {
@@ -2983,5 +2983,6 @@ function cerrarModalMkt(){ document.getElementById('modal-mkt').style.display='n
 // Enter para login
 document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 </script>
-</body>
-</html>
+
+
+</body></html>
