@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0050)file:///D:/Downloads/dashboard_agostini_v4_17.html -->
+<!-- saved from url=(0050)file:///D:/Downloads/dashboard_agostini_v4_18.html -->
 <html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2485,8 +2485,12 @@ function _renderFirmasContent(el, registros){
     <div class="section-hdr">
       <div><h2>Panel Firmas</h2><p>${isEmi?'Registro firma por firma':'Vista gerencia'} · ${mes}</p></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${totalMes>0||fdb.meses?.[mes]?.cargado?`<button class="btn-sm btn-sec" onclick="generarPDFFirmas('${mes}')">📄 Informe PDF ${mes}</button>`:''}
-        ${isEmi?`<button class="btn-sm" onclick="abrirNuevaFirma()">＋ Nueva firma</button>`:''}
+        ${currentUser.role==='admin' && (totalMes>0||fdb.meses?.[mes]?.cargado) ? `
+          <select id="pdf-mes-sel" style="padding:8px 12px;border:1.5px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:var(--font)">
+            ${meses.map(m=>`<option value="${m}" ${m===mes?'selected':''}>${m}</option>`).join('')}
+          </select>
+          <button class="btn-sm btn-sec" onclick="generarPDFFirmas(document.getElementById('pdf-mes-sel').value)">📄 Informe PDF</button>` : ''}
+        ${isEmi ? `<button class="btn-sm" onclick="abrirNuevaFirma()">＋ Nueva firma</button>` : ''}
       </div>
     </div>
 
@@ -2558,12 +2562,21 @@ function _renderFirmasContent(el, registros){
     </div></div>`}
 
     ${isEmi?`<div class="card"><div class="card-title">Mis tareas</div>
+      <!-- Tarea fija siempre visible -->
+      <div class="task-item">
+        <div class="task-cb" style="background:var(--pu);border-color:var(--pu);color:white;cursor:default">📋</div>
+        <div class="task-body">
+          <div class="task-text" style="color:var(--pu);font-weight:700">Cargar firmas del día en el dashboard</div>
+          <div class="task-meta">Tarea fija · cada vez que hagas una firma, registrala acá</div>
+        </div>
+        <button class="btn-sm" onclick="abrirNuevaFirma()" style="font-size:11px;padding:6px 10px">＋ Cargar</button>
+      </div>
       ${(()=>{ const p=DB.tareas.filter(t=>!t.done&&(t.para==='firmas'||t.para==='todos'));
         return p.length?p.map(t=>`<div class="task-item">
           <div class="task-cb ${t.done?'done':''}" onclick="toggleTarea(${t.id})">${t.done?'✓':''}</div>
           <div class="task-body"><div class="task-text ${t.done?'done-text':''}">${t.texto}</div>
           <div class="task-meta">Asignó: ${t.de} · ${t.fecha}</div></div></div>`).join('')
-          :'<div class="alerta alerta-green">✓ Sin tareas pendientes</div>'; })()}
+          :''; })()}
     </div>`:''}
 
     <!-- Modal nueva firma -->
