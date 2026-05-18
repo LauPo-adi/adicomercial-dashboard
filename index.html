@@ -498,16 +498,16 @@ function initDemoData(){
   const VENDEDORES = ['Carina','Diego','Emanuel'];
   // Ventas históricas simplificadas
   const historial = {
-    'Ene 26': {Carina:65, Diego:39, Emanuel:71, total:175, adi:2015000000},
-    'Feb 26': {Carina:29, Diego:23, Emanuel:9,  total:64,  adi:734588260},
-    'Mar 26': {Carina:16, Diego:13, Emanuel:5,  total:36,  adi:445636532},
-    'Abr 26': {Carina:26, Diego:11, Emanuel:11, total:48,  adi:620863660},
-    'May 26': {Carina:6,  Diego:1,  Emanuel:2,  total:9,   adi:104407000},
+    'Ene 26': {Carina:65, Diego:42, Emanuel:62, total:169, adi:2002434210},
+    'Feb 26': {Carina:29, Diego:26, Emanuel:9,  total:64,  adi:768101460},
+    'Mar 26': {Carina:16, Diego:16, Emanuel:4,  total:36,  adi:453662132},
+    'Abr 26': {Carina:25, Diego:12, Emanuel:11, total:48,  adi:620863660},
+    'May 26': {Carina:7,  Diego:1,  Emanuel:3,  total:11,  adi:145066652},
   };
   const metas_hist = {
-    'Ene 26': {Carina:65, Diego:39, Emanuel:71},
-    'Feb 26': {Carina:29, Diego:23, Emanuel:12},
-    'Mar 26': {Carina:16, Diego:13, Emanuel:7},
+    'Ene 26': {Carina:65, Diego:42, Emanuel:62},
+    'Feb 26': {Carina:29, Diego:26, Emanuel:12},
+    'Mar 26': {Carina:16, Diego:16, Emanuel:7},
     'Abr 26': {Carina:30, Diego:20, Emanuel:15},
     'May 26': {Carina:30, Diego:20, Emanuel:15},
   };
@@ -608,22 +608,23 @@ function getVentas(v,mes){ return DB.meses?.[mes]?.resumen?.[v]||0; }
 // ══════════════════════════════════════════════════════════
 const ADI_CONTADO = {
   'Ene 26': 31796210,
-  'Feb 26': 46608154.4,
-  'Mar 26': 19310547.02,
+  'Feb 26': 46608154,
+  'Mar 26': 19310547,
   'Abr 26': 32376500,
-  'May 26': 209000,};
+  'May 26': 2537303,
+};
 const ADI_FINANCIADO = {
   'Ene 26': 1970638000,
-  'Feb 26': 721493305.6,
-  'Mar 26': 434351584.98,
+  'Feb 26': 721493306,
+  'Mar 26': 434351585,
   'Abr 26': 588487160,
-  'May 26': 104198000,
+  'May 26': 142529348,
 };
 const CANT_TRADICIONAL = {
-  'Ene 26': 2, 'Feb 26': 4, 'Mar 26': 1, 'Abr 26': 0, 'May 26': 1,
+  'Ene 26': 2, 'Feb 26': 4, 'Mar 26': 1, 'Abr 26': 0, 'May 26': 0,
 };
 const CANT_PLANES = {
-  'Ene 26': 167, 'Feb 26': 60, 'Mar 26': 35, 'Abr 26': 48, 'May 26': 8,
+  'Ene 26': 167, 'Feb 26': 60, 'Mar 26': 35, 'Abr 26': 48, 'May 26': 11,
 };
 
 function getContado(mes){ return ADI_CONTADO[mes]||0; }
@@ -642,8 +643,8 @@ function getPctFinanciado(mes){
 // ══════════════════════════════════════════════════════════
 const FIN_LOTEO = {
   'May 26': {
-    'TIPUANA 2': {cant:6, precio_prom:25172667, anticipo_prom:190550, pct_ant:0.76, cuota_prom:190550, n_cuotas:131, ingreso_total:151136000},
-    'TIPUANA':   {cant:2, precio_prom:28680000, anticipo_prom:217500, pct_ant:0.76, cuota_prom:217500, n_cuotas:131, ingreso_total:57360000},
+    'TIPUANA 2': {cant:8, precio_prom:25628000, anticipo_prom:192000, pct_ant:0.75, cuota_prom:192000, n_cuotas:131, ingreso_total:205024000},
+    'TIPUANA':   {cant:2, precio_prom:28680000, anticipo_prom:215000, pct_ant:0.75, cuota_prom:215000, n_cuotas:131, ingreso_total:57360000},
     'EL NOGAL':  {cant:1, precio_prom:33000000, anticipo_prom:550000, pct_ant:1.67, cuota_prom:270417, n_cuotas:120, ingreso_total:33000000},
   },
   'Abr 26': {
@@ -2288,68 +2289,113 @@ function renderMiMes(el){
   const meses=MESES_ORDER.filter(m=>DB.meses_cargados.includes(m));
   const n=getVentas(v,mes), meta=getMeta(v,mes);
 
-  // Rescisiones del vendedor
-  const misResc=RESC_EXCEL.filter(r=>r.vendedor===vUp);
+  // Rescisiones del vendedor — solo del mes activo
+  const misResc=RESC_EXCEL.filter(r=>r.vendedor===vUp && r.mes===mes);
   const misNeteables=misResc.filter(r=>r.neteable);
-  const totalRescEquipo=RESC_EXCEL.length;
+  const totalRescEquipo=RESC_EXCEL.filter(r=>r.mes===mes).length;
   const pctEquipo=totalRescEquipo?Math.round(misResc.length/totalRescEquipo*100):0;
-
   const MOTIVO_COLORS={'Económicos':'var(--ro)','Carta Documento':'var(--az)','Arrepentido':'var(--am)','Cambio de lote':'var(--pu)','Desacuerdo c BCV':'var(--na)'};
+
+  // Tareas pendientes del vendedor
+  const tareasPend = DB.tareas.filter(t=>!t.done&&(t.para===v||t.para===v.toLowerCase()||t.para==='todos'));
 
   el.innerHTML=`
     <div class="section-hdr"><div><h2>Mi mes — ${v}</h2><p>${mes}</p></div></div>
     <div class="kgrid">
       <div class="kcard orange"><div class="kcard-label">Mis ventas</div><div class="kcard-val">${n}</div><div class="kcard-sub">de ${meta} en meta</div></div>
-      <div class="kcard ${n>=meta?'green':n>=meta*.7?'orange':'red'}"><div class="kcard-label">Avance</div><div class="kcard-val">${meta?Math.round(n/meta*100):0}%</div><div class="kcard-sub">${n>=meta?'Meta alcanzada':'Faltan '+(meta-n)}</div></div>
-      <div class="kcard red"><div class="kcard-label">Mis rescisiones</div><div class="kcard-val">${misResc.length}</div><div class="kcard-sub">${misNeteables.length} neteables</div></div>
-      <div class="kcard ${pctEquipo>30?'red':pctEquipo>15?'orange':'blue'}"><div class="kcard-label">% sobre equipo</div><div class="kcard-val">${pctEquipo}%</div><div class="kcard-sub">de las ${totalRescEquipo} del equipo</div></div>
+      <div class="kcard ${n>=meta?'green':n>=meta*.7?'orange':'red'}"><div class="kcard-label">Avance</div><div class="kcard-val">${meta?Math.round(n/meta*100):0}%</div><div class="kcard-sub">${n>=meta?'✓ Meta alcanzada':'Faltan '+(meta-n)}</div></div>
+      <div class="kcard red"><div class="kcard-label">Mis rescisiones ${mes}</div><div class="kcard-val">${misResc.length}</div><div class="kcard-sub">${misNeteables.length} neteables</div></div>
+      <div class="kcard ${pctEquipo>30?'red':pctEquipo>15?'orange':'blue'}"><div class="kcard-label">% sobre equipo</div><div class="kcard-val">${totalRescEquipo>0?pctEquipo+'%':'—'}</div><div class="kcard-sub">${totalRescEquipo>0?'de '+totalRescEquipo+' del equipo':'sin rescisiones en '+mes}</div></div>
+    </div>
+
+    <!-- Objetivos semanales/diarios fijos -->
+    <div class="card">
+      <div class="card-title">Objetivos diarios y semanales</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px">
+        <div style="background:var(--na-light);border-radius:10px;padding:14px;border:1px solid var(--na-c);text-align:center">
+          <div style="font-size:22px;margin-bottom:6px">📞</div>
+          <div style="font-size:11px;font-weight:700;color:var(--na);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Contactos diarios</div>
+          <div style="font-size:28px;font-weight:800;color:var(--na)">15</div>
+          <div style="font-size:11px;color:var(--gr-m);margin-top:4px">sin seguimiento en Tokko</div>
+        </div>
+        <div style="background:var(--ve-light);border-radius:10px;padding:14px;border:1px solid var(--ve-c);text-align:center">
+          <div style="font-size:22px;margin-bottom:6px">🎯</div>
+          <div style="font-size:11px;font-weight:700;color:var(--ve);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Venta diaria</div>
+          <div style="font-size:28px;font-weight:800;color:var(--ve)">1</div>
+          <div style="font-size:11px;color:var(--gr-m);margin-top:4px">objetivo por día</div>
+        </div>
+        <div style="background:var(--az-light);border-radius:10px;padding:14px;border:1px solid var(--az-c);text-align:center">
+          <div style="font-size:22px;margin-bottom:6px">💡</div>
+          <div style="font-size:11px;font-weight:700;color:var(--az);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Leads nuevos / semana</div>
+          <div style="font-size:28px;font-weight:800;color:var(--az)">15</div>
+          <div style="font-size:11px;color:var(--gr-m);margin-top:4px">prospectos nuevos</div>
+        </div>
+      </div>
+      <div style="background:var(--pu-c);border-radius:10px;padding:12px 16px;margin-top:10px;border:1px solid rgba(91,45,142,.15)">
+        <div style="font-size:12px;font-weight:700;color:var(--pu);margin-bottom:3px">📋 Tikket — Contactos sin seguimiento</div>
+        <div style="font-size:12px;color:var(--gr-m)">Tomá <strong style="color:var(--pu)">15 contactos sin seguimiento</strong> de Tokko por día y recontactalos por Tikket. Registrá el resultado en cada uno.</div>
+      </div>
+    </div>
+
+    <!-- Meta mensual -->
+    <div class="card">
+      <div class="card-title">Mi meta mensual — ${mes}</div>
+      <div style="display:flex;align-items:center;gap:16px;padding:8px 0">
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:13px;font-weight:600">${v}</span>
+            <span style="font-family:var(--mono);font-weight:800;font-size:16px">${n} <span style="color:var(--gr-m);font-size:12px;font-weight:400">/ ${meta} lotes</span></span>
+          </div>
+          ${pb(n,meta)}
+          <div style="font-size:11px;color:var(--gr-m);margin-top:5px">
+            ${n>=meta?`<span style="color:var(--ve);font-weight:700">✓ Meta alcanzada</span>`
+            :`Necesitás <strong>${meta-n} ventas más</strong> para alcanzar la meta — ${meta>0?Math.ceil((meta-n)/22):0} por día hábil`}
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-title">Mi historial mensual</div>
       <table class="tbl">
         <thead><tr><th>Mes</th><th class="num">Ventas</th><th class="num">Meta</th><th>Avance</th></tr></thead>
-        <tbody>${meses.map(m=>{const nv=getVentas(v,m),mm=getMeta(v,m);return`<tr><td>${m}</td><td class="num"><strong>${nv}</strong></td><td class="num">${mm}</td><td style="min-width:150px">${pb(nv,mm)}</td></tr>`}).join('')}</tbody>
+        <tbody>${meses.map(m=>{const nv=getVentas(v,m),mm=getMeta(v,m);return`<tr><td>${m}</td><td class="num"><strong style="color:${nv>=mm?'var(--ve)':'var(--ro)'}">${nv}</strong></td><td class="num">${mm}</td><td style="min-width:150px">${pb(nv,mm)}</td></tr>`}).join('')}</tbody>
       </table>
     </div>
 
     ${misResc.length?`
     <div class="card">
-      <div class="card-title">Mis rescisiones — Abr 26 · ${misResc.length} casos · ${pctEquipo}% del total del equipo</div>
-
-      <!-- Barra % sobre equipo -->
-      <div style="margin-bottom:16px">
+      <div class="card-title">Mis rescisiones — ${misResc.length} casos · ${pctEquipo}% del equipo</div>
+      <div style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:5px">
-          <span style="color:var(--gr-m)">Mi participación en rescisiones del equipo</span>
-          <span style="color:${pctEquipo>30?'var(--ro)':pctEquipo>15?'var(--na)':'var(--az)'}">${pctEquipo}% (${misResc.length} de ${totalRescEquipo})</span>
+          <span style="color:var(--gr-m)">Mi participación en rescisiones</span>
+          <span style="color:${pctEquipo>30?'var(--ro)':pctEquipo>15?'var(--na)':'var(--az)'}">${pctEquipo}%</span>
         </div>
         <div style="height:10px;background:#EBEBEB;border-radius:5px;overflow:hidden">
-          <div style="height:100%;width:${pctEquipo}%;background:${pctEquipo>30?'var(--ro)':pctEquipo>15?'var(--na)':'var(--az)'};border-radius:5px;transition:width .6s"></div>
+          <div style="height:100%;width:${pctEquipo}%;background:${pctEquipo>30?'var(--ro)':pctEquipo>15?'var(--na)':'var(--az)'};border-radius:5px"></div>
         </div>
       </div>
+      <div style="overflow-x:auto"><table class="tbl">
+        <thead><tr><th>Cliente</th><th>Loteo</th><th class="num">Cuotas</th><th>Motivo</th><th>Neteable</th></tr></thead>
+        <tbody>${misResc.map(r=>`<tr>
+          <td style="font-size:12px">${r.cliente}</td>
+          <td><span class="badge badge-blue">${r.loteo}</span></td>
+          <td class="num"><strong style="color:${r.neteable?'var(--ro)':'var(--gr)'}">${r.cuotas}</strong></td>
+          <td><span style="font-size:12px;color:${MOTIVO_COLORS[r.motivo]||'var(--gr-m)'};font-weight:600">${r.motivo}</span></td>
+          <td><span class="badge ${r.neteable?'badge-red':'badge-green'}">${r.neteable?'SÍ — descuenta':'NO'}</span></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`:''}
 
-      <!-- Detalle -->
-      <div style="overflow-x:auto">
-        <table class="tbl">
-          <thead><tr>
-            <th>Cliente</th><th>Loteo</th>
-            <th class="num">Cuotas pag.</th><th>Motivo</th><th>Neteable</th>
-          </tr></thead>
-          <tbody>${misResc.map(r=>`<tr>
-            <td style="font-size:12px">${r.cliente}</td>
-            <td><span class="badge badge-blue">${r.loteo}</span></td>
-            <td class="num"><strong style="color:${r.neteable?'var(--ro)':'var(--gr)'}">${r.cuotas}</strong></td>
-            <td><span style="font-size:12px;color:${MOTIVO_COLORS[r.motivo]||'var(--gr-m)'};font-weight:600">${r.motivo}</span></td>
-            <td><span class="badge ${r.neteable?'badge-red':'badge-green'}">${r.neteable?'SÍ — descuenta':'NO'}</span></td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-      <p class="hint">Rescisiones con menos de 6 cuotas pagadas descuentan de tu comisión. Abr 26.</p>
-    </div>`:`
+    <!-- Tareas pendientes -->
     <div class="card">
-      <div class="card-title">Mis rescisiones — Abr 26</div>
-      <div class="alerta alerta-green">✓ Sin rescisiones registradas en el período cargado</div>
-    </div>`}
+      <div class="card-title">Mis tareas pendientes</div>
+      ${tareasPend.length?tareasPend.map(t=>`<div class="task-item">
+        <div class="task-cb ${t.done?'done':''}" onclick="toggleTarea(${t.id})">${t.done?'✓':''}</div>
+        <div class="task-body"><div class="task-text ${t.done?'done-text':''}">${t.texto}</div>
+        <div class="task-meta">Asignó: ${t.de} · ${t.fecha}</div></div>
+      </div>`).join(''):'<div class="alerta alerta-green">✓ Sin tareas adicionales pendientes</div>'}
+    </div>
   `;
 }
 
