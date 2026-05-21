@@ -502,16 +502,14 @@ function initDemoData(){
     'Feb 26': {Carina:29, Diego:26, Emanuel:9,  total:64,  adi:768101460},
     'Mar 26': {Carina:16, Diego:16, Emanuel:4,  total:36,  adi:453662132},
     'Abr 26': {Carina:25, Diego:12, Emanuel:11, total:48,  adi:620863660},
-    'May 26': {Carina:7,  Diego:1,  Emanuel:3,  total:11,  adi:145066652},
+    'May 26': {Carina:8,  Diego:2,  Emanuel:3,  total:13,  adi:170221772},
   };
   const metas_hist = {
     'Ene 26': {Carina:65, Diego:42, Emanuel:62},
     'Feb 26': {Carina:29, Diego:26, Emanuel:12},
     'Mar 26': {Carina:16, Diego:16, Emanuel:7},
     'Abr 26': {Carina:30, Diego:20, Emanuel:15},
-    'May 26': {Carina:30, Diego:20, Emanuel:15},
-  };
-  const rescisiones_hist = {
+    'May 26': {Carina:30, Diego:20, Emanuel:15}, = {
     'Ene 26': {total:14, neteadas:2},
     'Feb 26': {total:13, neteadas:4},
     'Mar 26': {total:14, neteadas:3},
@@ -611,20 +609,20 @@ const ADI_CONTADO = {
   'Feb 26': 46608154,
   'Mar 26': 19310547,
   'Abr 26': 32376500,
-  'May 26': 2537303,
+  'May 26': 2915583,
 };
 const ADI_FINANCIADO = {
   'Ene 26': 1970638000,
   'Feb 26': 721493306,
   'Mar 26': 434351585,
   'Abr 26': 588487160,
-  'May 26': 142529348,
+  'May 26': 167306188,
 };
 const CANT_TRADICIONAL = {
   'Ene 26': 2, 'Feb 26': 4, 'Mar 26': 1, 'Abr 26': 0, 'May 26': 0,
 };
 const CANT_PLANES = {
-  'Ene 26': 167, 'Feb 26': 60, 'Mar 26': 35, 'Abr 26': 48, 'May 26': 11,
+  'Ene 26': 167, 'Feb 26': 60, 'Mar 26': 35, 'Abr 26': 48, 'May 26': 13,
 };
 
 function getContado(mes){ return ADI_CONTADO[mes]||0; }
@@ -643,9 +641,9 @@ function getPctFinanciado(mes){
 // ══════════════════════════════════════════════════════════
 const FIN_LOTEO = {
   'May 26': {
-    'TIPUANA 2': {cant:8, precio_prom:25628000, anticipo_prom:192000, pct_ant:0.75, cuota_prom:192000, n_cuotas:131, ingreso_total:205024000},
-    'TIPUANA':   {cant:2, precio_prom:28680000, anticipo_prom:215000, pct_ant:0.75, cuota_prom:215000, n_cuotas:131, ingreso_total:57360000},
-    'EL NOGAL':  {cant:1, precio_prom:33000000, anticipo_prom:550000, pct_ant:1.67, cuota_prom:270417, n_cuotas:120, ingreso_total:33000000},
+    'TIPUANA 2': {cant:10, precio_prom:25495596, anticipo_prom:192000, pct_ant:0.0075, cuota_prom:192000, n_cuotas:131, ingreso_total:254955960},
+    'TIPUANA':   {cant:2,  precio_prom:28680000, anticipo_prom:215000, pct_ant:0.0075, cuota_prom:215000, n_cuotas:131, ingreso_total:57360000},
+    'EL NOGAL':  {cant:1,  precio_prom:33000000, anticipo_prom:550000, pct_ant:0.0167, cuota_prom:270417, n_cuotas:120, ingreso_total:33000000},
   },
   'Abr 26': {
     'TIPUANA':      {cant:11, precio_prom:30752727, anticipo_prom:134000,   pct_ant:0.57,  cuota_prom:234413, n_cuotas:131, ingreso_total:338280000},
@@ -728,10 +726,10 @@ function getVendidosAcum(key){
 function ensureVPL(){
   if(DB.ventas_por_loteo && Object.keys(DB.ventas_por_loteo).length > 0) return;
   DB.ventas_por_loteo = {
-    'TIP 2':    {vendidos_mes:{'Ene 26':83,'Feb 26':34,'Mar 26':11,'Abr 26':18,'May 26':6}},
-    'NOGAL':    {vendidos_mes:{'Ene 26':4, 'Feb 26':2, 'Mar 26':7, 'Abr 26':7, 'May 26':1}},
+    'TIP 2':    {vendidos_mes:{'Ene 26':83,'Feb 26':36,'Mar 26':20,'Abr 26':18,'May 26':10}},
+    'NOGAL':    {vendidos_mes:{'Ene 26':5, 'Feb 26':2, 'Mar 26':3, 'Abr 26':7, 'May 26':1}},
     'N ALIS 3': {vendidos_mes:{'Ene 26':4, 'Feb 26':3, 'Mar 26':1, 'Abr 26':6, 'May 26':0}},
-    'JACA':     {vendidos_mes:{'Ene 26':30,'Feb 26':5, 'Mar 26':6, 'Abr 26':1, 'May 26':0}},
+    'JACA':     {vendidos_mes:{'Ene 26':31,'Feb 26':6, 'Mar 26':6, 'Abr 26':1, 'May 26':0}},
     'BVD':      {vendidos_mes:{'Ene 26':11,'Feb 26':3, 'Mar 26':0, 'Abr 26':4, 'May 26':0}},
     'BOSQUE':   {vendidos_mes:{'Ene 26':4, 'Feb 26':3, 'Mar 26':1, 'Abr 26':1, 'May 26':0}},
     'N ALIS 2': {vendidos_mes:{'Ene 26':0, 'Feb 26':0, 'Mar 26':2, 'Abr 26':0, 'May 26':0}},
