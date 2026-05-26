@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<!-- ADI Dashboard v4 — deploy 2026-05-14-001 -->
-<html lang="es">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0050)file:///D:/Downloads/dashboard_agostini_v4_25.html -->
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agostini DI — Dashboard Comercial</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./index_files/chart.umd.js.descargar"></script>
+<script src="./index_files/xlsx.full.min.js.descargar"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -256,7 +255,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--gr);font-size:14px
 </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./index_files/xlsx.full.min.js.descargar"></script>
 <script>
 // ══════════════════════════════════════════════════════════
 // USUARIOS Y AUTH
@@ -502,7 +501,7 @@ function initDemoData(){
     'Feb 26': {Carina:29, Diego:26, Emanuel:9,  total:64,  adi:768101460},
     'Mar 26': {Carina:16, Diego:16, Emanuel:4,  total:36,  adi:453662132},
     'Abr 26': {Carina:25, Diego:12, Emanuel:11, total:48,  adi:620863660},
-    'May 26': {Carina:8,  Diego:2,  Emanuel:3,  total:13,  adi:170221772},
+    'May 26': {Carina:9,  Diego:6,  Emanuel:3,  total:18,  adi:230385792},
   };
   const metas_hist = {
     'Ene 26': {Carina:65, Diego:42, Emanuel:62},
@@ -557,8 +556,11 @@ function doLogin(){
   const badge=document.getElementById('topbar-role-badge');
   badge.textContent=ROLE_LABELS[u.role]||u.role;
   badge.className='topbar-role '+ROLE_CSS[u.role];
-  // Cargar datos desde Supabase y luego construir UI
-  loadFromSupabase().then(()=>buildUI()).catch(()=>buildUI());
+  // Cargar datos desde Supabase con timeout de 4 segundos
+  const sbTimeout = new Promise((_,reject)=>setTimeout(()=>reject('timeout'),4000));
+  Promise.race([loadFromSupabase(), sbTimeout])
+    .then(()=>buildUI())
+    .catch(()=>{ console.warn('Supabase no disponible, usando datos locales'); buildUI(); });
 }
 document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 
@@ -609,20 +611,20 @@ const ADI_CONTADO = {
   'Feb 26': 46608154,
   'Mar 26': 19310547,
   'Abr 26': 32376500,
-  'May 26': 2915583,
+  'May 26': 10735023,
 };
 const ADI_FINANCIADO = {
   'Ene 26': 1970638000,
   'Feb 26': 721493306,
   'Mar 26': 434351585,
   'Abr 26': 588487160,
-  'May 26': 167306188,
+  'May 26': 219650768,
 };
 const CANT_TRADICIONAL = {
   'Ene 26': 2, 'Feb 26': 4, 'Mar 26': 1, 'Abr 26': 0, 'May 26': 0,
 };
 const CANT_PLANES = {
-  'Ene 26': 167, 'Feb 26': 60, 'Mar 26': 35, 'Abr 26': 48, 'May 26': 13,
+  'Ene 26': 167, 'Feb 26': 60, 'Mar 26': 35, 'Abr 26': 48, 'May 26': 18,
 };
 
 function getContado(mes){ return ADI_CONTADO[mes]||0; }
@@ -2258,7 +2260,21 @@ function processXL(wb,fname){
   if(!DB.meses_cargados.includes(mesKey)) DB.meses_cargados.push(mesKey);
   DB.meses_cargados.sort((a,b)=>MESES_ORDER.indexOf(a)-MESES_ORDER.indexOf(b));
   saveDB();
-  showXLOk(`✓ ${mesKey} procesado — ${totalVentas} ventas (Carina: ${resumen.Carina}, Diego: ${resumen.Diego}, Emanuel: ${resumen.Emanuel})`);
+
+  // Sincronizar automáticamente a Supabase
+  showXLOk(`✓ ${mesKey} procesado — ${totalVentas} ventas. Sincronizando con la nube...`);
+  const rows = ['Carina','Diego','Emanuel'].map(v=>({
+    mes: mesKey, vendedor: v,
+    cantidad: resumen[v]||0,
+    meta: DB.metas[mesKey]?.[v]||15,
+    adi: resumen.adi||0
+  }));
+  sbUpsert('ventas', rows).then(()=>{
+    showXLOk(`✓ ${mesKey} — ${totalVentas} ventas (Carina: ${resumen.Carina}, Diego: ${resumen.Diego}, Emanuel: ${resumen.Emanuel}) — ✓ Sincronizado en la nube`);
+    showSync(true);
+  }).catch(()=>{
+    showXLOk(`✓ ${mesKey} — ${totalVentas} ventas guardadas localmente (sin conexión a la nube)`);
+  });
   renderCargar(document.getElementById('main-content'));
 }
 
@@ -2335,8 +2351,68 @@ function renderMiMes(el){
       </div>
     </div>
 
-    <!-- Meta mensual -->
-    <div class="card">
+    <!-- Cálculo IA: contactos y leads necesarios — tasas reales de Tokko/Tikket -->
+    <div class="card" style="border-left:4px solid var(--pu)">
+      <div class="card-title" style="color:var(--pu)">🤖 Tu plan diario — basado en tus métricas reales de Tokko</div>
+      ${(()=>{
+        // Tasas de conversión REALES de Tokko mayo 2026
+        const TOKKO = {
+          'Carina':  { contactos_x_venta: 10, sin_seguimiento: 1521, tpr_hs: 27.9, tikket_pct: 77.9, nsr_pct: 4.8 },
+          'Diego':   { contactos_x_venta: 24, sin_seguimiento: 1263, tpr_hs: 17.6, tikket_pct: 1.6,  nsr_pct: 3.6 },
+          'Emanuel': { contactos_x_venta: 18, sin_seguimiento: 881,  tpr_hs: 20.7, tikket_pct: 7.8,  nsr_pct: 0.4 },
+        };
+        const tData = TOKKO[v] || { contactos_x_venta: 20, sin_seguimiento: 0, tpr_hs: 24, tikket_pct: 10, nsr_pct: 5 };
+
+        const diasHabilesTotal = 22;
+        const hoy = new Date();
+        const diaActual = Math.min(hoy.getDate(), diasHabilesTotal);
+        const diasRestantes = Math.max(1, diasHabilesTotal - diaActual);
+        const ventasFaltantes = Math.max(0, meta - n);
+
+        const contactosDiarios = ventasFaltantes > 0
+          ? Math.ceil((ventasFaltantes * tData.contactos_x_venta) / diasRestantes)
+          : Math.ceil(tData.contactos_x_venta * 0.5);
+
+        // Potencial de la cartera sin seguimiento
+        const ventasPotenciales = Math.floor(tData.sin_seguimiento / tData.contactos_x_venta);
+        const urgente = diasRestantes <= 5 && ventasFaltantes > 3;
+        const tprAlerta = tData.tpr_hs > 12;
+        const tikketBajo = tData.tikket_pct < 20;
+
+        return `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+          <div style="background:var(--pu-c);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(91,45,142,.15)">
+            <div style="font-size:11px;font-weight:700;color:var(--pu);text-transform:uppercase;margin-bottom:4px">Contactos hoy</div>
+            <div style="font-size:32px;font-weight:800;color:var(--pu)">${contactosDiarios}</div>
+            <div style="font-size:11px;color:var(--gr-m)">1 venta c/ ${tData.contactos_x_venta} contactos</div>
+          </div>
+          <div style="background:${urgente?'var(--ro-c)':'var(--ve-light)'};border-radius:10px;padding:14px;text-align:center;border:1px solid ${urgente?'rgba(183,28,28,.15)':'var(--ve-c)'}">
+            <div style="font-size:11px;font-weight:700;color:${urgente?'var(--ro)':'var(--ve)'};text-transform:uppercase;margin-bottom:4px">Días hábiles</div>
+            <div style="font-size:32px;font-weight:800;color:${urgente?'var(--ro)':'var(--ve)'}">${diasRestantes}</div>
+            <div style="font-size:11px;color:var(--gr-m)">${ventasFaltantes} ventas para meta</div>
+          </div>
+          <div style="background:var(--az-light);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--az-c)">
+            <div style="font-size:11px;font-weight:700;color:var(--az);text-transform:uppercase;margin-bottom:4px">Cartera dormida</div>
+            <div style="font-size:32px;font-weight:800;color:var(--az)">${tData.sin_seguimiento.toLocaleString('es-AR')}</div>
+            <div style="font-size:11px;color:var(--gr-m)">~${ventasPotenciales} ventas potenciales</div>
+          </div>
+        </div>
+
+        <!-- Alertas personalizadas -->
+        ${tprAlerta ? `<div class="alerta alerta-orange" style="margin-bottom:8px">
+          ⏱ Tu tiempo de primera respuesta es <strong>${tData.tpr_hs.toFixed(0)}hs</strong> — los leads se enfrían rápido. Meta: responder en menos de <strong>4hs</strong>.
+        </div>` : ''}
+        ${tikketBajo ? `<div class="alerta alerta-red" style="margin-bottom:8px">
+          📉 Tu tasa de cierre en Tikket es <strong>${tData.tikket_pct}%</strong> — revisá cómo estás gestionando los tickets abiertos.
+        </div>` : ''}
+
+        <div style="background:var(--gr-c);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--gr-m)">
+          ${ventasFaltantes <= 0
+            ? '🎉 <strong style="color:var(--ve)">¡Meta alcanzada!</strong> Seguí prospectando para superar el objetivo.'
+            : `📊 Para cerrar <strong>${ventasFaltantes} venta${ventasFaltantes>1?'s':''}</strong> en los próximos <strong>${diasRestantes} días hábiles</strong>, necesitás contactar <strong>${contactosDiarios} leads por día</strong>. Tu cartera dormida tiene <strong>${tData.sin_seguimiento.toLocaleString('es-AR')} leads</strong> — son <strong>~${ventasPotenciales} ventas potenciales</strong> sin tocar.`}
+        </div>`;
+      })()}
+    </div>
       <div class="card-title">Mi meta mensual — ${mes}</div>
       <div style="display:flex;align-items:center;gap:16px;padding:8px 0">
         <div style="flex:1">
@@ -3047,5 +3123,6 @@ function cerrarModalMkt(){ document.getElementById('modal-mkt').style.display='n
 // Enter para login
 document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 </script>
-</body>
-</html>
+
+
+</body></html>
